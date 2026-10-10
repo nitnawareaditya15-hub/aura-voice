@@ -1,0 +1,30 @@
+name: Build APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unzip project
+        run: unzip -q AuraVoice.zip
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - name: Build APK
+        working-directory: AuraVoice
+        run: gradle :app:assembleDebug
+      - name: Publish APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp AuraVoice/app/build/outputs/apk/debug/app-debug.apk AuraVoice.apk
+          gh release create "build-${{ github.run_number }}" AuraVoice.apk --repo "$GITHUB_REPOSITORY" --title "Aura Voice build ${{ github.run_number }}" --notes "Download AuraVoice.apk and tap it to install."
